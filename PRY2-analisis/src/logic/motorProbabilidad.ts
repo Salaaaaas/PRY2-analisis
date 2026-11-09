@@ -1,0 +1,138 @@
+import { BoardState, Placement, SHIPS, Orientation, SimulationCount } from '../types/battleship';
+
+export const generarConfiguracionAleatoria = (): Placement[] => {
+  const colocaciones: Placement[] = [];
+  const tableroOcupado: boolean[][] = Array.from({ length: 10 }, () => Array(10).fill(false));
+
+  for (const barco of SHIPS) {
+    let colocado = false;
+    let intentos = 0;
+
+    while (!colocado && intentos < 100) {
+      intentos++;
+      const orientacion: Orientation = Math.random() < 0.5 ? 'horizontal' : 'vertical';
+      const filaMax = orientacion === 'vertical' ? 10 - barco.size : 9;
+      const colMax = orientacion === 'horizontal' ? 10 - barco.size : 9;
+
+      const filaInicio = Math.floor(Math.random() * (filaMax + 1));
+      const colInicio = Math.floor(Math.random() * (colMax + 1));
+
+      let libre = true;
+      const celdasTemp: { r: number; c: number }[] = [];
+
+      for (let i = 0; i < barco.size; i++) {
+        const r = orientacion === 'vertical' ? filaInicio + i : filaInicio;
+        const c = orientacion === 'horizontal' ? colInicio + i : colInicio;
+
+        if (tableroOcupado[r][c]) {
+          libre = false;
+          break;
+        }
+        celdasTemp.push({ r, c });
+      }
+
+      if (libre) {
+        for (const celda of celdasTemp) {
+          tableroOcupado[celda.r][celda.c] = true;
+        }
+        colocaciones.push({
+          shipId: barco.id,
+          row: filaInicio,
+          col: colInicio,
+          orientation: orientacion,
+        });
+        colocado = true;
+      }
+    }
+
+    if (!colocado) {
+      return generarConfiguracionAleatoria();
+    }
+  }
+
+  return colocaciones;
+};
+
+export const esConfiguracionValida = (colocaciones: Placement[], tableroActual: BoardState): boolean => {
+  const mapaConfig: boolean[][] = Array.from({ length: 10 }, () => Array(10).fill(false));
+
+  for (const colocacion of colocaciones) {
+    const barco = SHIPS.find(s => s.id === colocacion.shipId)!;
+    for (let i = 0; i < barco.size; i++) {
+      const r = colocacion.orientation === 'vertical' ? colocacion.row + i : colocacion.row;
+      const c = colocacion.orientation === 'horizontal' ? colocacion.col + i : colocacion.col;
+      mapaConfig[r][c] = true;
+    }
+  }
+
+  for (let r = 0; r < 10; r++) {
+    for (let c = 0; c < 10; c++) {
+      const estadoCelda = tableroActual[r][c].state;
+
+      if (estadoCelda === 'miss' && mapaConfig[r][c]) {
+        return false;
+      }
+
+      if ((estadoCelda === 'hit' || estadoCelda === 'sunk') && !mapaConfig[r][c]) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
+
+export interface ResultadoProbabilidad {
+  matrizProbabilidades: number[][]; 
+  tiempoEjecucionMs: number;
+  configuracionesValidas: number;
+}
+
+export const calcularProbabilidades = (
+  tableroActual: BoardState,
+  cantidadSimulaciones: SimulationCount = 1000
+): ResultadoProbabilidad => {
+  const inicioTiempo = performance.now();
+
+  const conteoBarcosEnCelda: number[][] = Array.from({ length: 10 }, () => Array(10).fill(0));
+  let validasEncontradas = 0;
+  let intentosTotales = 0;
+  const maxIntentosPermitidos = cantidadSimulaciones * 20; 
+
+  while (validasEncontradas < cantidadSimulaciones && intentosTotales < maxIntentosPermitidos) {
+    intentosTotales++;
+    const config = generarConfiguracionAleatoria();
+
+    if (esConfiguracionValida(config, tableroActual)) {
+      validasEncontradas++;
+      for (const colocacion of config) {
+        const barco = SHIPS.find(s => s.id === colocacion.shipId)!;
+        for (let i = 0; i < barco.size; i++) {
+          const r = colocacion.orientation === 'vertical' ? colocacion.row + i : colocacion.row;
+          const c = colocacion.orientation === 'horizontal' ? colocacion.col + i : colocacion.col;
+          conteoBarcosEnCelda[r][c]++;
+        }
+      }
+    }
+  }
+
+  const matrizProbabilidades: number[][] = Array.from({ length: 10 }, () => Array(10).fill(0));
+
+  if (validasEncontradas > 0) {
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 10; c++) {
+        matrizProbabilidades[r][c] = (conteoBarcosEnCelda[r][c] / validasEncontradas) * 100;
+      }
+    }
+  }
+
+  const finTiempo = performance.now();
+  const tiempoEjecucionMs = Math.round(finTiempo - inicioTiempo);
+
+  return {
+    matrizProbabilidades,
+    tiempoEjecucionMs,
+    configuracionesValidas: validasEncontradas,
+  };
+};
