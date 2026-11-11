@@ -1,4 +1,5 @@
-import { BoardState, Placement, SHIPS, Orientation, SimulationCount } from '../types/battleship';
+import type { BoardState, Placement, Orientation, SimulationCount } from '../types/battleship';
+import { SHIPS } from '../types/battleship';
 
 export const generarConfiguracionAleatoria = (): Placement[] => {
   const colocaciones: Placement[] = [];
