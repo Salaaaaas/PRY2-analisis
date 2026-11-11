@@ -1,4 +1,4 @@
-import type { BoardState, Cell, Placement, Orientation, ShipType } from '../types/battleship';
+import type { BoardState, Cell, Placement, Orientation, ShipType, ResultadoDisparo } from '../types/battleship';
 import { SHIPS } from '../types/battleship';
 
 export const crearTableroVacio = (): BoardState => {
@@ -85,7 +85,7 @@ export const generarFlotaAleatoria = (): { tablero: BoardState; colocaciones: Pl
 };
 
 
-type ResultadoDisparo = 'agua' | 'impacto' | 'hundido' | 'repetido'
+
 //es la funcion para disparar a los barcos, valida el estado de la celda
 // y llama a barco hundido para validar si el barco esta tumbado 
 export function disparar(tablero: BoardState, fila: number, columna: number): 
@@ -123,7 +123,7 @@ export function esta_hundido(tablero: BoardState, ship_id: ShipType): boolean {
       }
     }
     const tamano = SHIPS.find(b => b.id === ship_id)
-    return hits == tamano?.size
+    return hits === tamano?.size
   }
 
 //Para ver si existen barcos vivos en un tablero, es la funcion para validar si alguno de los 2 ya gano
