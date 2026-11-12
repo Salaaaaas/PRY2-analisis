@@ -137,3 +137,23 @@ export const calcularProbabilidades = (
     configuracionesValidas: validasEncontradas,
   };
 };
+
+
+export function obtener_recomendacion(matriz: number[][], tablero: BoardState): {fila: number, columna: number, probabilidad: number} {
+  let mejor_prob = -1
+  let mejor_fil = 0
+  let mejor_col = 0
+  for (let fil = 0; fil < 10; fil++){
+    for (let col = 0; col < 10; col++){
+      if (tablero[fil][col].state !== 'empty'){
+        continue
+      }
+      if (matriz[fil][col] > mejor_prob){
+        mejor_prob = matriz[fil][col]
+        mejor_col = col
+        mejor_fil = fil 
+      }
+    }
+  }
+  return {fila: mejor_fil, columna: mejor_col, probabilidad: mejor_prob}
+}
