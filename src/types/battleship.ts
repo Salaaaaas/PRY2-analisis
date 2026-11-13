@@ -47,3 +47,4 @@ export interface GameStats {
   simulationTimeMs: number;
   validConfigurationsCount: number;
 }
+export type ResultadoDisparo = 'agua' | 'impacto' | 'hundido' | 'repetido'

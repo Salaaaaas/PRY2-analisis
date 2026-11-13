@@ -74,7 +74,7 @@ export const esConfiguracionValida = (colocaciones: Placement[], tableroActual: 
         return false;
       }
 
-      if ((estadoCelda === 'hit' || estadoCelda === 'sunk') && !mapaConfig[r][c]) {
+      if ((estadoCelda === 'hit') && !mapaConfig[r][c]) {
         return false;
       }
     }
@@ -103,7 +103,7 @@ export const calcularProbabilidades = (
 
   while (validasEncontradas < cantidadSimulaciones && intentosTotales < maxIntentosPermitidos) {
     intentosTotales++;
-    const config = generarConfiguracionAleatoria();
+    const config = generarConfiguracionCompatible(tableroActual);
 
     if (esConfiguracionValida(config, tableroActual)) {
       validasEncontradas++;
@@ -157,3 +157,65 @@ export function obtener_recomendacion(matriz: number[][], tablero: BoardState): 
   }
   return {fila: mejor_fil, columna: mejor_col, probabilidad: mejor_prob}
 }
+
+export function puedeColocar(tablero: BoardState, ocupado: boolean[][], fila: number, columna: number, tamano:number, orientacion: Orientation): boolean {
+  for(let i = 0; i < tamano; i++){
+    const r = orientacion === "vertical" ? fila + i : fila;
+    const c = orientacion === "horizontal" ? columna + i : columna;
+    if (r > 9 || c > 9 ) return false;
+    if (ocupado[r][c]) return false;
+    const estado = tablero[r][c].state;
+    if (estado === "miss" || estado === "sunk") return false;
+  }
+  return true;
+}
+
+export function generarConfiguracionCompatible(tablero:BoardState): Placement[]{
+  const colocaciones: Placement[] = [];
+  const tableroOcupado: boolean[][] = Array.from({ length: 10 }, () => Array(10).fill(false));
+
+  const hundidos = new Set<string>();
+  for (const fila of tablero){
+    for (const celda of fila){
+      if (celda.state === 'sunk' && celda.shipId) hundidos.add(celda.shipId);
+    }
+  }
+  for (const barco of SHIPS) {
+    if (hundidos.has(barco.id)) continue;
+    let colocado = false;
+    let intentos = 0;
+
+    while (!colocado && intentos < 100) {
+      intentos++;
+      const orientacion: Orientation = Math.random() < 0.5 ? 'horizontal' : 'vertical';
+      const filaMax = orientacion === 'vertical' ? 10 - barco.size : 9;
+      const colMax = orientacion === 'horizontal' ? 10 - barco.size : 9;
+
+      const filaInicio = Math.floor(Math.random() * (filaMax + 1));
+      const colInicio = Math.floor(Math.random() * (colMax + 1));
+
+      if (puedeColocar(tablero, tableroOcupado, filaInicio, colInicio, barco.size, orientacion)){
+        for (let i = 0; i < barco.size; i++){
+          const r = orientacion === "vertical" ? filaInicio + i: filaInicio;
+          const c = orientacion === "horizontal" ? colInicio + i: colInicio;
+          tableroOcupado[r][c] = true
+        }
+        colocaciones.push({
+          shipId: barco.id,
+          row: filaInicio,
+          col: colInicio,
+          orientation: orientacion,
+        });
+        colocado = true
+      }
+    }
+
+    if (!colocado) {
+      return generarConfiguracionCompatible(tablero);
+    }
+  }
+
+  return colocaciones;
+};
+
+
