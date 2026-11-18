@@ -90,6 +90,7 @@ export const generarFlotaAleatoria = (): { tablero: BoardState; colocaciones: Pl
 // y llama a barco hundido para validar si el barco esta tumbado 
 export function disparar(tablero: BoardState, fila: number, columna: number): 
   {tablero: BoardState; resultado: ResultadoDisparo; barcoHundido? : ShipType}{
+    tablero = clonarTablero(tablero);
     const celda: Cell = tablero[fila][columna];
     if (celda.state !== 'empty'){
       return {tablero,  resultado: 'repetido'};
@@ -135,4 +136,27 @@ export function flota_hundida(tablero: BoardState): boolean{
     }
   }
   return true
+}
+
+export function clonarTablero(tablero: BoardState): BoardState {
+  return tablero.map(fila => fila.map(celda => ({ ...celda })));
+}
+
+export function vistaAgente(tablero: BoardState): BoardState {
+  return tablero.map(fila => fila.map(celda => ({
+    row: celda.row,
+    col: celda.col,
+    hasShip: false,
+    shipId: celda.state === 'sunk' ? celda.shipId : undefined,
+    state: celda.state,
+  })));
+}
+
+export function estadoFlota(tablero: BoardState): { id: ShipType; nombre: string; tamano: number; hundido: boolean }[] {
+  return SHIPS.map(barco => ({
+    id: barco.id,
+    nombre: barco.name,
+    tamano: barco.size,
+    hundido: tablero.some(fila => fila.some(c => c.shipId === barco.id && c.state === 'sunk')),
+  }));
 }
