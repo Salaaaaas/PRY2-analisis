@@ -47,3 +47,18 @@ export interface GameStats {
   simulationTimeMs: number;
   validConfigurationsCount: number;
 }
+export type ResultadoDisparo = 'agua' | 'impacto' | 'hundido' | 'repetido'
+
+export interface Recomendacion {
+  fila: number;
+  columna: number;
+  probabilidad: number;
+}
+
+export interface AnalisisProbabilistico {
+  matrizProbabilidades: number[][];
+  tiempoEjecucionMs: number;
+  configuracionesValidas: number;
+  simulaciones: SimulationCount;
+  recomendacion: Recomendacion;
+}
